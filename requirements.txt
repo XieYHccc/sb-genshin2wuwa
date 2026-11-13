@@ -1,7 +1,8 @@
-# torch / torchvision 需单独从 cu128 源安装（RTX 5070 = sm_120）：
+# torch / torchvision 需从 PyTorch 官方 CUDA 源单独安装。Blackwell（sm_120，如 RTX 50 系）必须用 cu128 或更新的构建，
+# 更早的架构用任何 CUDA 12.x 构建都可以；本项目统一用 cu128：
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 
-# --- DC-AE 闸门 / 潜空间预计算 ---
+# --- DC-AE / DINOv2 / 打包 ---
 diffusers
 transformers
 accelerate
@@ -9,17 +10,15 @@ safetensors
 numpy
 Pillow
 
-# --- 采集与过滤 ---
+# --- 采集与过滤（采集只能在 Windows 上做）---
 mss
-pywin32
+pywin32; sys_platform == "win32"
 psutil
 imagehash
 opencv-python
 
-# --- 训练（后续阶段）---
-# torchcfm
-# pot
-# einops
-# lpips
-# clean-fid
-# scikit-image
+# --- 训练与评估 ---
+scipy          # minibatch OT = 线性指派（linear_sum_assignment），不需要 torchcfm / POT
+einops
+lpips
+tensorboard
