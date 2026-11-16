@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 500" width="1400" height="500" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#2E9E5B"/></marker>
+    <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#4A6FA5"/></marker>
+    <marker id="aO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#C46F14"/></marker>
+    <marker id="aK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1F2937"/></marker>
+  </defs>
+  <rect width="1400" height="500" fill="#ffffff"/>
+  <rect x="20" y="20" width="660" height="460" rx="16" fill="#F7F8FA" stroke="#E2E5EA" stroke-width="1.5"/>
+  <rect x="720" y="20" width="660" height="460" rx="16" fill="#F7F8FA" stroke="#E2E5EA" stroke-width="1.5"/>
+
+  <!-- 左：一个网络，两个方向 -->
+  <text x="350" y="68" font-size="26" font-weight="700" fill="#1F2937" text-anchor="middle">一个网络，两个方向</text>
+
+  <line x1="110" y1="250" x2="590" y2="250" stroke="#9CA3AF" stroke-width="3"/>
+  <circle cx="110" cy="250" r="12" fill="#2E9E5B" stroke="#ffffff" stroke-width="2.5"/>
+  <circle cx="590" cy="250" r="12" fill="#4A6FA5" stroke="#ffffff" stroke-width="2.5"/>
+  <g font-size="20" text-anchor="middle">
+    <text x="110" y="292" fill="#2E9E5B">原神</text>
+    <text x="110" y="318" fill="#6B7280" font-size="17">物理时间 t = 0</text>
+    <text x="590" y="292" fill="#4A6FA5">鸣潮</text>
+    <text x="590" y="318" fill="#6B7280" font-size="17">物理时间 t = 1</text>
+  </g>
+
+  <line x1="150" y1="190" x2="550" y2="190" stroke="#2E9E5B" stroke-width="4" marker-end="url(#aG)"/>
+  <text x="350" y="150" font-size="20" fill="#2E9E5B" text-anchor="middle">正向：预测 v→，网络时间 τ = t</text>
+  <text x="350" y="176" font-size="17" fill="#6B7280" text-anchor="middle">τ = 0 在原神端</text>
+
+  <line x1="550" y1="368" x2="150" y2="368" stroke="#4A6FA5" stroke-width="4" marker-end="url(#aB)"/>
+  <text x="350" y="400" font-size="20" fill="#4A6FA5" text-anchor="middle">反向：预测 v←，网络时间 τ = 1 − t</text>
+  <text x="350" y="426" font-size="17" fill="#6B7280" text-anchor="middle">τ = 0 在鸣潮端</text>
+
+  <text x="350" y="462" font-size="18" fill="#374151" text-anchor="middle">网络看到的 τ = 0 永远是“出发端”</text>
+
+  <!-- 右：两场相减，随机项抵消 -->
+  <text x="1050" y="68" font-size="26" font-weight="700" fill="#1F2937" text-anchor="middle">两场相减，随机项抵消</text>
+
+  <!-- 辅助虚线 -->
+  <g stroke="#C9CDD4" stroke-width="2" stroke-dasharray="6 6" fill="none">
+    <line x1="1050" y1="200" x2="1270" y2="200"/>
+    <line x1="1050" y1="200" x2="830" y2="200"/>
+    <line x1="1270" y1="200" x2="1270" y2="310"/>
+    <line x1="830" y1="200" x2="830" y2="310"/>
+  </g>
+
+  <!-- b 与 -b -->
+  <line x1="1050" y1="310" x2="1262" y2="310" stroke="#1F2937" stroke-width="4" marker-end="url(#aK)"/>
+  <text x="1168" y="344" font-size="20" fill="#1F2937" text-anchor="middle">b：概率流速度</text>
+  <!-- 随机项 s -->
+  <line x1="1050" y1="310" x2="1050" y2="208" stroke="#C46F14" stroke-width="4" marker-end="url(#aO)"/>
+  <text x="1050" y="186" font-size="19" fill="#C46F14" text-anchor="middle">s：来自噪声的那一项</text>
+  <!-- v→ = b + s -->
+  <line x1="1050" y1="310" x2="1263" y2="203.5" stroke="#2E9E5B" stroke-width="4" marker-end="url(#aG)"/>
+  <text x="1284" y="188" font-size="20" fill="#2E9E5B" text-anchor="middle">v→ = b + s</text>
+  <!-- v← = −b + s -->
+  <line x1="1050" y1="310" x2="837" y2="203.5" stroke="#4A6FA5" stroke-width="4" marker-end="url(#aB)"/>
+  <text x="826" y="188" font-size="20" fill="#4A6FA5" text-anchor="middle">v← = −b + s</text>
+
+  <circle cx="1050" cy="310" r="8" fill="#1F2937"/>
+
+  <rect x="850" y="388" width="400" height="56" rx="12" fill="#ffffff" stroke="#9CA3AF" stroke-width="2"/>
+  <text x="1050" y="425" font-size="23" font-weight="700" fill="#1F2937" text-anchor="middle">( v→ − v← ) / 2 = b</text>
+</svg>

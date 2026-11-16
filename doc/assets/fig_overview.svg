@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 600" width="1400" height="600" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#6B7280"/>
+    </marker>
+    <marker id="ahO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#C46F14"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="600" fill="#ffffff"/>
+
+  <!-- 泳道 -->
+  <rect x="20" y="20" width="1360" height="250" rx="16" fill="#F7F8FA" stroke="#E2E5EA" stroke-width="1.5"/>
+  <rect x="20" y="340" width="1360" height="240" rx="16" fill="#F7F8FA" stroke="#E2E5EA" stroke-width="1.5"/>
+  <g font-size="26" font-weight="700" fill="#1F2937">
+    <text x="48" y="64">训练</text>
+    <text x="48" y="384">推理</text>
+  </g>
+  <g font-size="18" fill="#6B7280">
+    <text x="112" y="63">训练循环里不解 SDE，就是普通的速度回归</text>
+    <text x="112" y="383">确定性：同一帧输入，永远得到同一帧输出</text>
+  </g>
+
+  <!-- 训练：5 个框 -->
+  <g fill="#ffffff" stroke="#9CA3AF" stroke-width="2">
+    <rect x="48" y="100" width="230" height="130" rx="12"/>
+    <rect x="316" y="100" width="230" height="130" rx="12"/>
+    <rect x="852" y="100" width="230" height="130" rx="12"/>
+  </g>
+  <rect x="584" y="100" width="230" height="130" rx="12" fill="#EAF6EE" stroke="#2E9E5B" stroke-width="2.5"/>
+  <rect x="1120" y="100" width="230" height="130" rx="12" fill="#EAF0F8" stroke="#4A6FA5" stroke-width="2.5"/>
+
+  <g text-anchor="middle" fill="#1F2937">
+    <g font-size="21" font-weight="700">
+      <text x="163" y="146">两个游戏的画面</text>
+      <text x="431" y="146">压到潜空间</text>
+      <text x="699" y="146">minibatch OT 配对</text>
+      <text x="967" y="146">布朗桥插值</text>
+      <text x="1235" y="146">DiT 回归速度</text>
+    </g>
+    <g font-size="17" fill="#4B5563">
+      <text x="163" y="178">各自采集，</text>
+      <text x="163" y="202">没有一一对应</text>
+      <text x="431" y="178">高压缩率自编码器，</text>
+      <text x="431" y="202">离线算好</text>
+      <text x="699" y="178">每个 batch 里把</text>
+      <text x="699" y="202">内容相近的配成对</text>
+      <text x="967" y="178">在配好的两端之间</text>
+      <text x="967" y="202">插值，再加一点噪声</text>
+      <text x="1235" y="178">同一个网络学</text>
+      <text x="1235" y="202">正、反两个速度场</text>
+    </g>
+  </g>
+
+  <g stroke="#6B7280" stroke-width="2.5" fill="none" marker-end="url(#ah)">
+    <line x1="278" y1="165" x2="312" y2="165"/>
+    <line x1="546" y1="165" x2="580" y2="165"/>
+    <line x1="814" y1="165" x2="848" y2="165"/>
+    <line x1="1082" y1="165" x2="1116" y2="165"/>
+  </g>
+
+  <!-- 训练 → 推理：同一个网络 -->
+  <path d="M1235 230 L1235 305 L699 305 L699 416" stroke="#C46F14" stroke-width="2.5" stroke-dasharray="8 6" fill="none" marker-end="url(#ahO)"/>
+  <rect x="842" y="288" width="250" height="34" rx="8" fill="#ffffff"/>
+  <text x="967" y="312" font-size="18" fill="#C46F14" text-anchor="middle">训练好的网络给出两个速度场</text>
+
+  <!-- 推理：5 个框 -->
+  <g fill="#ffffff" stroke="#9CA3AF" stroke-width="2">
+    <rect x="48" y="420" width="230" height="130" rx="12"/>
+    <rect x="316" y="420" width="230" height="130" rx="12"/>
+    <rect x="852" y="420" width="230" height="130" rx="12"/>
+    <rect x="1120" y="420" width="230" height="130" rx="12"/>
+  </g>
+  <rect x="584" y="420" width="230" height="130" rx="12" fill="#FCF1E3" stroke="#C46F14" stroke-width="2.5"/>
+
+  <g text-anchor="middle" fill="#1F2937">
+    <g font-size="21" font-weight="700">
+      <text x="163" y="478">源游戏的一帧</text>
+      <text x="431" y="478">编码</text>
+      <text x="699" y="466">概率流 ODE</text>
+      <text x="967" y="478">解码</text>
+      <text x="1235" y="478">同一帧，换了画风</text>
+    </g>
+    <g font-size="17" fill="#4B5563">
+      <text x="163" y="508">比如原神</text>
+      <text x="431" y="508">整帧一次进网络</text>
+      <text x="699" y="498">速度 = (正向 − 反向) / 2</text>
+      <text x="699" y="522">沿它积分若干步</text>
+      <text x="967" y="508">回到像素</text>
+      <text x="1235" y="508">比如鸣潮</text>
+    </g>
+  </g>
+
+  <g stroke="#6B7280" stroke-width="2.5" fill="none" marker-end="url(#ah)">
+    <line x1="278" y1="485" x2="312" y2="485"/>
+    <line x1="546" y1="485" x2="580" y2="485"/>
+    <line x1="814" y1="485" x2="848" y2="485"/>
+    <line x1="1082" y1="485" x2="1116" y2="485"/>
+  </g>
+</svg>
