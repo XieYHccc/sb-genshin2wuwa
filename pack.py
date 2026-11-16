@@ -11,8 +11,8 @@
 行号 idx = 2*i + flip（i 是清单里第 i 个保留帧）。
 
 用法：
-    python pack.py
-输出：data/30_packed/{game}_lat.npy、{game}_thumb.npy、{game}_dino.npy、{game}_meta.csv、
+    python pack.py [--out data/30_packed_allday]
+输出（默认 data/30_packed，可用 --out 改）：{game}_lat.npy、{game}_thumb.npy、{game}_dino.npy、{game}_meta.csv、
       dino_pca.pt、overlay_mask.png、pack_info.json、check/（叠加层修补前后对照）
 """
 from __future__ import annotations
@@ -54,7 +54,11 @@ def main():
     ap.add_argument("--pca-dim", type=int, default=64)
     ap.add_argument("--pca-tokens", type=int, default=400_000, help="拟合 PCA 用的 token 数上限")
     ap.add_argument("--no-dino", action="store_true")
+    ap.add_argument("--out", default="data/30_packed",
+                    help="输出目录（相对仓库根目录）；训练时用 --packed 指向它")
     args = ap.parse_args()
+    global OUT
+    OUT = ROOT / args.out
     sys.stdout.reconfigure(errors="replace")
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True

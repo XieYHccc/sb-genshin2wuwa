@@ -3,14 +3,18 @@
 
 在线过滤只看得到局部，这里补全局视野的步骤（按顺序，先命中的原因记账）：
     1. dup      全量 pHash 去重（跨会话、跨滑动窗口），按时间顺序保留先出现的
-    2. night    时段筛查：游戏内时间是采集时间的连续函数，所以按“整段时间”判，不逐帧判。
+    2. night    时段筛查，默认关闭：白天、黄昏、夜晚的帧都保留（数据量优先，实际游玩也会遇到夜晚）。
+                加 --time-filter 才启用：游戏内时间是采集时间的连续函数，所以按“整段时间”判，不逐帧判。
                 会话目录下有 exclude.txt（人工判读的时段）就用它；否则用 CLIP 的
-                P(夜/黄昏 | 时段) 沿时间轴取滑动中位数，超过阈值的整段排除，并提示人工复核
+                P(夜/黄昏 | 时段) 沿时间轴取滑动中位数，超过阈值的整段排除，并提示人工复核。
+                关闭时照样判读（exclude.txt 优先，否则 P(夜)），只用来在报告里统计两域的夜晚/黄昏占比；
+                P(夜) 照样写进 CSV 和时间线拼图
     3. content  CLIP zero-shot 逐帧筛查：对话框 / 战斗特效 / 室内 / 角色特写
     4. blur     清晰度复核：在剩下的帧里，两域各按自己分布的 q 分位（默认 3%）定阈值
     5. guard    验证集保护带（见下）
 按会话切分 train / val（§3.5）：--val-sessions 里的会话作 val。某个域的 val 不足 --min-val 张时，
-从该域最后一个 train 会话的时间末尾切一段作临时 val，并丢掉切点前 --guard-s 秒的帧，避免相邻帧泄漏。
+从该域最后一个 train 会话里均匀切 --val-blocks 个时间块作临时 val（和 train 同一片区域、覆盖各个时段，
+面板测的是转换质量而不是跨区域外推），并丢掉每块前后 --guard-s 秒的帧，避免相邻帧泄漏。
 
 另外从全部帧的逐像素时域方差里找出固定叠加层（UID 文字、隐藏 UI 的图标），两域取并集、膨胀后
 存成 overlay_mask.png（规范分辨率）。打包和推理都用它修补叠加层，免得模型去学两边 UI 的差异。
@@ -283,11 +287,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--games", default=",".join(GAMES))
     ap.add_argument("--val-sessions", default="00,05", help="作验证集的会话号（§3.5）")
-    ap.add_argument("--min-val", type=int, default=150, help="某域 val 少于此数时，从最后一个 train 会话末尾补")
-    ap.add_argument("--val-tail", type=float, default=0.15, help="补 val 时至少切走该会话保留帧的这个比例")
-    ap.add_argument("--guard-s", type=float, default=45, help="临时 val 切点前丢掉的秒数")
+    ap.add_argument("--min-val", type=int, default=150, help="某域 val 少于此数时，从最后一个 train 会话里补")
+    ap.add_argument("--val-frac", type=float, default=0.15, help="补 val 时至少切走该会话保留帧的这个比例")
+    ap.add_argument("--val-blocks", type=int, default=6,
+                    help="补 val 时在会话里均匀切几个时间块（1 = 只切会话末尾一段）")
+    ap.add_argument("--guard-s", type=float, default=20, help="临时 val 每块前后丢掉的秒数（保护带）")
     ap.add_argument("--sharp-q", type=float, default=0.03,
                     help="清晰度按各域分布的这个分位定阈值。被动采集已在线去掉运动模糊，分位再高丢的就是天空多的开阔景")
+    ap.add_argument("--time-filter", action="store_true", help="启用时段筛查（默认关闭，夜晚和黄昏都保留）")
     ap.add_argument("--night-thr", type=float, default=0.35, help="没有 exclude.txt 时：P(夜|时段) 滑动中位数阈值")
     ap.add_argument("--smooth", type=int, default=60, help="滑动中位数半窗（帧）")
     ap.add_argument("--content-max", type=float, default=0.5, help="P(ui/combat/indoor/closeup) 之和超过它就丢")
@@ -326,7 +333,8 @@ def main():
         keep_d, dup_of = global_dedup(c["phash"], order, PHASH_MIN_DIST)
         reason[~keep_d] = "dup"
 
-        # 2. 时段：按会话、按时间顺序
+        # 2. 时段：按会话、按时间顺序。判读总是做（dark 用于报告两域时段比例），只有 --time-filter 时才排除
+        dark = np.zeros(n, bool)
         for s in sorted(set(sess)):
             idx = order[sess[order] == s]
             night_s[idx] = rolling_median(p_night[idx], args.smooth)
@@ -339,6 +347,9 @@ def main():
             else:
                 bad = night_s[idx] > args.night_thr
                 how = f"自动：P(夜) 滑动中位数 > {args.night_thr}，请看 timeline 拼图复核"
+            dark[idx] = bad
+            if not args.time_filter:
+                continue
             hit = idx[bad & (reason[idx] == "")]
             reason[hit] = "night"
             report.append(f"   s{s} 时段筛查 [{how}]：排除 {bad.sum()} 帧（{hms(tsec[idx].min())}–{hms(tsec[idx].max())}）")
@@ -351,21 +362,33 @@ def main():
         thr_sharp = float(np.quantile(c["sharp"][alive], args.sharp_q))
         reason[alive & (c["sharp"] < thr_sharp)] = "blur"
 
-        # 5. 验证集：不足时从最后一个 train 会话末尾补，切点前留保护带
+        # 5. 验证集：不足时从最后一个 train 会话里均匀切 --val-blocks 个时间块补，每块前后留保护带
         keep = reason == ""
         n_val = int((keep & (split == "val")).sum())
         if n_val < args.min_val:
             train_sess = sorted(set(sess[split == "train"]))
             s = train_sess[-1]
             idx = order[(sess[order] == s) & keep[order]]        # 该会话保留帧，按时间
-            n_tail = max(int(np.ceil(args.val_tail * len(idx))), args.min_val - n_val)
-            tail = idx[-n_tail:]
-            split[tail] = "val"
-            t_cut = tsec[tail[0]]
-            guard = idx[(tsec[idx] >= t_cut - args.guard_s) & (tsec[idx] < t_cut)]
+            n_need = max(int(np.ceil(args.val_frac * len(idx))), args.min_val - n_val)
+            K = max(1, args.val_blocks)
+            m = int(np.ceil(n_need / K))                         # 每块帧数
+            # 块均匀铺开：K=1 时就是会话末尾一段；K>1 时第一块贴会话开头、最后一块贴会话末尾
+            starts = [len(idx) - m] if K == 1 else [round(j * (len(idx) - m) / (K - 1)) for j in range(K)]
+            is_val = np.zeros(len(idx), bool)
+            for a in starts:
+                is_val[a:a + m] = True
+            split[idx[is_val]] = "val"
+            t = tsec[idx]
+            near = np.zeros(len(idx), bool)
+            spans = []
+            for a in starts:
+                t0, t1 = t[a], t[min(a + m, len(idx)) - 1]
+                near |= ((t >= t0 - args.guard_s) & (t < t0)) | ((t > t1) & (t <= t1 + args.guard_s))
+                spans.append(f"{hms(t0)}–{hms(t1)}")
+            guard = idx[near & ~is_val]
             reason[guard] = "guard"
-            report.append(f"   val 不足（{n_val} < {args.min_val}）：把 s{s} 从 {hms(t_cut)} 起的 {n_tail} 帧划为临时 val，"
-                          f"切点前 {args.guard_s:.0f}s 的 {len(guard)} 帧作保护带丢弃")
+            report.append(f"   val 不足（{n_val} < {args.min_val}）：从 s{s} 均匀切 {K} 个时间块共 {int(is_val.sum())} 帧作临时 val"
+                          f"（{'，'.join(spans)}），每块前后 {args.guard_s:.0f}s 的 {len(guard)} 帧作保护带丢弃")
         keep = reason == ""
 
         with open(OUT / f"{g}.csv", "w", newline="", encoding="utf-8") as f:
@@ -378,7 +401,13 @@ def main():
                             f"{int(c['phash'][i]):016x}", files[dup_of[i]] if dup_of[i] >= 0 else "",
                             f"{p_night[i]:.3f}", f"{night_s[i]:.3f}", f"{p_content[i]:.3f}", tag[i]])
 
+        if not args.time_filter:
+            report.append("   时段筛查：关闭（夜晚、黄昏都保留）")
         report.append(f"   保留 {keep.sum()}（{keep.mean():.1%}）；清晰度阈值 {thr_sharp:.1f}（{args.sharp_q:.0%} 分位）")
+        for sp in ("train", "val"):     # 有 exclude.txt 的会话按人工时段，否则按 P(夜) 滑动中位数 > --night-thr
+            m = keep & (split == sp)
+            if m.any():
+                report.append(f"   {sp} 夜晚/黄昏占比 {dark[m].mean():.1%}（{int(dark[m].sum())}/{int(m.sum())}）")
         report.append("   丢弃：" + "，".join(f"{r} {int((reason == r).sum())}" for r in REASONS))
         for s in sorted(set(sess)):
             m = sess == s
